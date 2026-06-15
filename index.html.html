@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SDR Tracker">
+<meta name="theme-color" content="#ffffff">
+<title>SDR Job Tracker</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #ffffff; --bg2: #f5f5f3; --bg3: #efefec;
+  --text: #1a1a18; --text2: #6b6b67; --text3: #9e9e9a;
+  --border: rgba(0,0,0,0.10); --border2: rgba(0,0,0,0.18);
+  --accent: #1a1a18; --radius: 12px; --radius-sm: 8px;
+  --warn: #b45309; --warn-bg: #fef3c7;
+  --ok: #15803d; --ok-bg: #dcfce7;
+  --danger: #b91c1c; --danger-bg: #fee2e2;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a18; --bg2: #242422; --bg3: #2e2e2c;
+    --text: #f0ede8; --text2: #9e9e9a; --text3: #6b6b67;
+    --border: rgba(255,255,255,0.10); --border2: rgba(255,255,255,0.18);
+    --accent: #f0ede8;
+    --warn: #fcd34d; --warn-bg: #451a03;
+    --ok: #86efac; --ok-bg: #14532d;
+    --danger: #fca5a5; --danger-bg: #450a0a;
+  }
+}
+html, body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; }
+
+/* Nav tabs */
+.tabs { display: flex; border-bottom: 0.5px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 200; }
+.tab { flex: 1; padding: 12px 4px 10px; text-align: center; font-size: 11px; font-weight: 600; color: var(--text3); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; font-family: inherit; text-transform: uppercase; letter-spacing: 0.4px; }
+.tab.active { color: var(--text); border-bottom-color: var(--text); }
+.tab i { display: block; font-size: 20px; margin-bottom: 2px; }
+
+/* Pages */
+.page { display: none; }
+.page.active { display: block; }
+
+/* Header */
+.header { background: var(--bg); border-bottom: 0.5px solid var(--border); padding: 14px 16px 12px; display: flex; align-items: center; justify-content: space-between; }
+.header-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+.header-sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
+.rate-num { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; text-align: right; }
+.rate-label { font-size: 11px; color: var(--text3); margin-top: 1px; text-align: right; }
+
+/* Metrics */
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 10px 16px; background: var(--bg2); border-bottom: 0.5px solid var(--border); }
+.metric { background: var(--bg); border-radius: var(--radius-sm); padding: 8px 10px; }
+.metric-val { font-size: 18px; font-weight: 600; }
+.metric-lbl { font-size: 10px; color: var(--text3); margin-top: 1px; }
+
+/* Weekly goal */
+.goal-bar-wrap { padding: 10px 16px; border-bottom: 0.5px solid var(--border); background: var(--bg2); }
+.goal-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.goal-label { font-size: 12px; color: var(--text2); }
+.goal-edit { font-size: 12px; color: var(--text3); cursor: pointer; background: none; border: none; font-family: inherit; color: var(--text3); }
+.goal-track { height: 6px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+.goal-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.3s; }
+
+/* Add form */
+.add-section { padding: 12px 16px; border-bottom: 0.5px solid var(--border); }
+.add-toggle { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; cursor: pointer; padding: 10px 14px; background: var(--bg2); border-radius: var(--radius-sm); border: none; width: 100%; text-align: left; color: var(--text); font-family: inherit; }
+.add-toggle i { font-size: 18px; }
+.add-form { display: none; margin-top: 12px; background: var(--bg2); border-radius: var(--radius); padding: 14px; }
+.add-form.open { display: block; }
+.field { margin-bottom: 10px; }
+.field label { display: block; font-size: 11px; color: var(--text3); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+.field input, .field select, .field textarea { width: 100%; background: var(--bg); color: var(--text); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px; font-family: inherit; appearance: none; -webkit-appearance: none; outline: none; }
+.field textarea { resize: none; height: 60px; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--text); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.field-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.stars { display: flex; gap: 6px; padding: 8px 0 2px; }
+.star { font-size: 22px; cursor: pointer; color: var(--text3); background: none; border: none; padding: 0; line-height: 1; }
+.star.on { color: #EF9F27; }
+.btn-submit { width: 100%; background: var(--accent); color: var(--bg); border: none; border-radius: var(--radius-sm); padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 4px; font-family: inherit; }
+.btn-submit:active { opacity: 0.8; }
+
+/* Funnel */
+.funnel-section { padding: 14px 16px 10px; border-bottom: 0.5px solid var(--border); }
+.section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text3); margin-bottom: 10px; }
+.funnel-bars { display: flex; align-items: flex-end; gap: 5px; height: 60px; }
+.funnel-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+.funnel-bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 3px; }
+.funnel-count { font-size: 11px; font-weight: 600; margin-bottom: 2px; }
+.funnel-name { font-size: 9px; color: var(--text3); margin-top: 4px; text-align: center; line-height: 1.2; }
+
+/* Source chart */
+.source-chart { padding: 14px 16px; border-bottom: 0.5px solid var(--border); }
+.source-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.source-name { font-size: 12px; color: var(--text2); width: 90px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.source-bar-wrap { flex: 1; height: 8px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+.source-bar-fill { height: 100%; border-radius: 99px; background: #378ADD; }
+.source-rate { font-size: 11px; color: var(--text3); width: 36px; text-align: right; flex-shrink: 0; }
+
+/* App list */
+.list-section { padding: 0 16px 16px; }
+.list-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 0 8px; }
+.filter-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.filter-strip::-webkit-scrollbar { display: none; }
+.filter-btn { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; color: var(--text2); font-family: inherit; flex-shrink: 0; }
+.filter-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.btn-export { background: none; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 5px 10px; font-size: 12px; cursor: pointer; color: var(--text2); font-family: inherit; display: flex; align-items: center; gap: 4px; }
+
+/* App card */
+.app-card { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; border: 0.5px solid var(--border); cursor: pointer; }
+.app-card.overdue { border-left: 3px solid var(--warn); }
+.app-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; }
+.app-company { font-size: 15px; font-weight: 600; }
+.app-role { font-size: 13px; color: var(--text2); margin-top: 1px; }
+.app-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; cursor: pointer; user-select: none; }
+.badge-applied   { background: #dbeafe; color: #1e40af; }
+.badge-screening { background: #ede9fe; color: #4c1d95; }
+.badge-interview { background: #fef3c7; color: #92400e; }
+.badge-offer     { background: #dcfce7; color: #14532d; }
+.badge-rejected  { background: #fee2e2; color: #7f1d1d; }
+.badge-ghosted   { background: #f1f5f9; color: #475569; }
+@media (prefers-color-scheme: dark) {
+  .badge-applied   { background: #1e3a5f; color: #93c5fd; }
+  .badge-screening { background: #2d1b69; color: #c4b5fd; }
+  .badge-interview { background: #451a03; color: #fcd34d; }
+  .badge-offer     { background: #14532d; color: #86efac; }
+  .badge-rejected  { background: #450a0a; color: #fca5a5; }
+  .badge-ghosted   { background: #1e293b; color: #94a3b8; }
+}
+.app-date { font-size: 12px; color: var(--text3); }
+.app-source { font-size: 12px; color: var(--text3); }
+.days-ago { font-size: 11px; padding: 2px 6px; border-radius: 99px; font-weight: 500; }
+.days-cold { background: var(--warn-bg); color: var(--warn); }
+.days-ok { background: var(--bg3); color: var(--text3); }
+.app-stars { letter-spacing: 1px; font-size: 12px; }
+.followup-flag { font-size: 11px; display: flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 99px; }
+.followup-due { background: var(--warn-bg); color: var(--warn); }
+.followup-ok { background: var(--bg3); color: var(--text3); }
+.btn-del { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 18px; padding: 4px; line-height: 1; flex-shrink: 0; }
+
+/* Detail drawer */
+.drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 500; }
+.drawer-overlay.open { display: block; }
+.drawer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-radius: 18px 18px 0 0; z-index: 600; max-height: 88vh; overflow-y: auto; padding: 0 0 env(safe-area-inset-bottom, 20px); transform: translateY(100%); transition: transform 0.28s ease; }
+.drawer.open { transform: translateY(0); }
+.drawer-handle { width: 36px; height: 4px; background: var(--bg3); border-radius: 99px; margin: 12px auto 8px; }
+.drawer-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 4px 16px 12px; border-bottom: 0.5px solid var(--border); }
+.drawer-co { font-size: 18px; font-weight: 700; }
+.drawer-role { font-size: 13px; color: var(--text2); margin-top: 2px; }
+.drawer-body { padding: 14px 16px; }
+.detail-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 9px 0; border-bottom: 0.5px solid var(--border); font-size: 14px; }
+.detail-row:last-child { border-bottom: none; }
+.detail-key { color: var(--text3); font-size: 13px; }
+.detail-val { color: var(--text); text-align: right; max-width: 60%; }
+.drawer-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text3); margin: 14px 0 8px; }
+.notes-box { background: var(--bg2); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; color: var(--text2); line-height: 1.5; white-space: pre-wrap; }
+.prep-box { background: var(--bg2); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; color: var(--text2); line-height: 1.5; white-space: pre-wrap; }
+.contact-box { background: var(--bg2); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; color: var(--text2); }
+.drawer-actions { display: flex; gap: 8px; padding: 0 16px 14px; }
+.btn-action { flex: 1; padding: 11px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text); font-family: inherit; }
+.btn-action.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.btn-action.danger { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+
+/* Settings page */
+.settings-page { padding: 16px; }
+.settings-card { background: var(--bg2); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; border: 0.5px solid var(--border); }
+.settings-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+.setting-label { color: var(--text2); font-size: 13px; }
+.setting-input { background: var(--bg); color: var(--text); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 14px; font-family: inherit; width: 70px; text-align: center; outline: none; }
+.btn-danger-full { width: 100%; background: var(--danger-bg); color: var(--danger); border: none; border-radius: var(--radius-sm); padding: 11px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+.empty { text-align: center; padding: 3rem 1rem; color: var(--text3); }
+.empty i { font-size: 40px; display: block; margin-bottom: 10px; }
+.empty p { font-size: 14px; }
+.spacer { height: 20px; }
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('home')" id="tab-home"><i class="ti ti-home" aria-hidden="true"></i>Home</button>
+  <button class="tab" onclick="showTab('apps')" id="tab-apps"><i class="ti ti-list" aria-hidden="true"></i>Apps</button>
+  <button class="tab" onclick="showTab('stats')" id="tab-stats"><i class="ti ti-chart-bar" aria-hidden="true"></i>Stats</button>
+  <button class="tab" onclick="showTab('settings')" id="tab-settings"><i class="ti ti-settings" aria-hidden="true"></i>Settings</button>
+</div>
+
+<!-- HOME PAGE -->
+<div class="page active" id="page-home">
+  <div class="header">
+    <div>
+      <div class="header-title">SDR Tracker</div>
+      <div class="header-sub" id="h-sub">0 applications</div>
+    </div>
+    <div>
+      <div class="rate-num" id="h-rate">—</div>
+      <div class="rate-label">response rate</div>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="metric-val" id="m-total">0</div><div class="metric-lbl">applied</div></div>
+    <div class="metric"><div class="metric-val" id="m-active">0</div><div class="metric-lbl">pipeline</div></div>
+    <div class="metric"><div class="metric-val" id="m-offers">0</div><div class="metric-lbl">offers</div></div>
+    <div class="metric"><div class="metric-val" id="m-followup">0</div><div class="metric-lbl">follow up</div></div>
+  </div>
+
+  <div class="goal-bar-wrap">
+    <div class="goal-row">
+      <span class="goal-label" id="goal-label">This week: 0 / 10 applications</span>
+      <button class="goal-edit" onclick="showTab('settings')">Edit goal</button>
+    </div>
+    <div class="goal-track"><div class="goal-fill" id="goal-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="add-section">
+    <button class="add-toggle" onclick="toggleForm()">
+      <i class="ti ti-plus" aria-hidden="true"></i> Log a new application
+    </button>
+    <div class="add-form" id="add-form">
+      <div class="field">
+        <label>Company</label>
+        <input type="text" id="f-company" placeholder="e.g. Salesforce" autocomplete="organization">
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Role</label><input type="text" id="f-role" placeholder="SDR – APAC" autocomplete="off"></div>
+        <div class="field"><label>Date applied</label><input type="date" id="f-date"></div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Source</label>
+          <select id="f-source"><option>LinkedIn</option><option>Referral</option><option>Company site</option><option>Job board</option><option>Recruiter</option><option>Other</option></select>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="f-status"><option>Applied</option><option>Screening</option><option>Interview</option><option>Offer</option><option>Rejected</option><option>Ghosted</option></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Contact name</label><input type="text" id="f-contact" placeholder="Recruiter / HM" autocomplete="off"></div>
+        <div class="field"><label>Follow-up date</label><input type="date" id="f-followup"></div>
+      </div>
+      <div class="field">
+        <label>Priority</label>
+        <div class="stars" id="star-picker">
+          <button class="star" onclick="setStar(1)">★</button>
+          <button class="star" onclick="setStar(2)">★</button>
+          <button class="star" onclick="setStar(3)">★</button>
+        </div>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="f-notes" placeholder="Any details…"></textarea></div>
+      <div class="field"><label>Interview prep</label><textarea id="f-prep" placeholder="Questions to ask, research notes…"></textarea></div>
+      <button class="btn-submit" onclick="addApp()">Save application</button>
+    </div>
+  </div>
+
+  <div class="funnel-section">
+    <div class="section-label">Pipeline</div>
+    <div class="funnel-bars" id="funnel"></div>
+    <div style="display:flex;gap:5px;" id="funnel-names"></div>
+  </div>
+
+  <div class="list-section">
+    <div class="list-header">
+      <div class="section-label" style="margin-bottom:0;">Recent</div>
+    </div>
+    <div id="home-list"></div>
+    <div class="empty" id="home-empty">
+      <i class="ti ti-briefcase" aria-hidden="true"></i>
+      <p>No applications yet.<br>Tap above to log your first one.</p>
+    </div>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<!-- APPS PAGE -->
+<div class="page" id="page-apps">
+  <div style="padding: 12px 16px; border-bottom: 0.5px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+    <div class="section-label" style="margin-bottom:0;">All applications</div>
+    <button class="btn-export" onclick="exportCSV()"><i class="ti ti-download" aria-hidden="true" style="font-size:14px"></i> Export CSV</button>
+  </div>
+  <div style="padding: 10px 16px 6px;">
+    <div class="filter-strip" id="filters"></div>
+  </div>
+  <div style="padding: 0 16px 16px;" id="app-list"></div>
+  <div class="empty" id="app-empty" style="display:none;">
+    <i class="ti ti-briefcase" aria-hidden="true"></i>
+    <p>No applications yet.</p>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<!-- STATS PAGE -->
+<div class="page" id="page-stats">
+  <div class="funnel-section" style="border-top: 0.5px solid var(--border);">
+    <div class="section-label">Pipeline breakdown</div>
+    <div class="funnel-bars" id="funnel2"></div>
+    <div style="display:flex;gap:5px;" id="funnel-names2"></div>
+  </div>
+  <div class="source-chart">
+    <div class="section-label">Response rate by source</div>
+    <div id="source-chart"></div>
+  </div>
+  <div style="padding: 14px 16px; border-top: 0.5px solid var(--border);">
+    <div class="section-label">Weekly applications</div>
+    <canvas id="weekly-chart" role="img" aria-label="Weekly application count bar chart" style="width:100%;max-height:140px;"></canvas>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div class="page" id="page-settings">
+  <div class="settings-page">
+    <div class="settings-card">
+      <div class="settings-title">Weekly goal</div>
+      <div class="setting-row">
+        <span class="setting-label">Applications per week</span>
+        <input class="setting-input" type="number" id="s-goal" min="1" max="100" value="10" onchange="saveSettings()">
+      </div>
+    </div>
+    <div class="settings-card">
+      <div class="settings-title">Follow-up reminder</div>
+      <div class="setting-row">
+        <span class="setting-label">Days before flagging as overdue</span>
+        <input class="setting-input" type="number" id="s-followdays" min="1" max="30" value="7" onchange="saveSettings()">
+      </div>
+    </div>
+    <div class="settings-card">
+      <div class="settings-title">Data</div>
+      <button class="btn-export" style="width:100%;justify-content:center;margin-bottom:10px;padding:11px;" onclick="exportCSV()">
+        <i class="ti ti-download" aria-hidden="true"></i> Export all data as CSV
+      </button>
+      <button class="btn-danger-full" onclick="clearAll()">Clear all data</button>
+    </div>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<!-- DETAIL DRAWER -->
+<div class="drawer-overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-header">
+    <div>
+      <div class="drawer-co" id="d-co"></div>
+      <div class="drawer-role" id="d-role"></div>
+    </div>
+    <div id="d-stars" style="font-size:18px;color:#EF9F27;"></div>
+  </div>
+  <div class="drawer-body">
+    <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val" id="d-status"></span></div>
+    <div class="detail-row"><span class="detail-key">Date applied</span><span class="detail-val" id="d-date"></span></div>
+    <div class="detail-row"><span class="detail-key">Days since applied</span><span class="detail-val" id="d-days"></span></div>
+    <div class="detail-row"><span class="detail-key">Source</span><span class="detail-val" id="d-source"></span></div>
+    <div class="detail-row" id="d-contact-row" style="display:none"><span class="detail-key">Contact</span><span class="detail-val" id="d-contact"></span></div>
+    <div class="detail-row" id="d-followup-row" style="display:none"><span class="detail-key">Follow-up by</span><span class="detail-val" id="d-followup"></span></div>
+    <div id="d-notes-wrap" style="display:none">
+      <div class="drawer-section">Notes</div>
+      <div class="notes-box" id="d-notes"></div>
+    </div>
+    <div id="d-prep-wrap" style="display:none">
+      <div class="drawer-section">Interview prep</div>
+      <div class="prep-box" id="d-prep"></div>
+    </div>
+  </div>
+  <div class="drawer-actions">
+    <button class="btn-action" onclick="cycleStatusDrawer()">Advance status ↗</button>
+    <button class="btn-action danger" onclick="deleteDrawer()">Remove</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const STATUSES = ['Applied','Screening','Interview','Offer','Rejected','Ghosted'];
+const COLORS = { Applied:'#378ADD', Screening:'#7F77DD', Interview:'#EF9F27', Offer:'#639922', Rejected:'#E24B4A', Ghosted:'#888780' };
+const BADGE = { Applied:'badge-applied', Screening:'badge-screening', Interview:'badge-interview', Offer:'badge-offer', Rejected:'badge-rejected', Ghosted:'badge-ghosted' };
+
+let apps = [], settings = { goal: 10, followDays: 7 }, starVal = 0, drawerApp = null, activeFilter = 'All', weeklyChart = null;
+
+function load() {
+  try { apps = JSON.parse(localStorage.getItem('sdr_apps_v3') || '[]'); } catch(e) { apps = []; }
+  try { const s = JSON.parse(localStorage.getItem('sdr_settings') || '{}'); settings = {...settings, ...s}; } catch(e) {}
+  document.getElementById('f-date').value = today();
+  document.getElementById('s-goal').value = settings.goal;
+  document.getElementById('s-followdays').value = settings.followDays;
+  render();
+}
+
+function save() { localStorage.setItem('sdr_apps_v3', JSON.stringify(apps)); }
+function saveSettings() {
+  settings.goal = parseInt(document.getElementById('s-goal').value) || 10;
+  settings.followDays = parseInt(document.getElementById('s-followdays').value) || 7;
+  localStorage.setItem('sdr_settings', JSON.stringify(settings));
+  render();
+}
+
+function today() { return new Date().toISOString().slice(0,10); }
+function fmtDate(s) { if (!s) return ''; const [y,m,d] = s.split('-'); return `${d}/${m}/${y.slice(2)}`; }
+function daysSince(s) { if (!s) return 0; return Math.floor((Date.now() - new Date(s)) / 86400000); }
+function starsHtml(n) { return n ? '★'.repeat(n) + '☆'.repeat(3-n) : ''; }
+
+function showTab(t) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+t).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+  if (t === 'stats') renderStats();
+}
+
+function toggleForm() {
+  const f = document.getElementById('add-form');
+  f.classList.toggle('open');
+  if (f.classList.contains('open')) document.getElementById('f-company').focus();
+}
+
+function setStar(n) {
+  starVal = starVal === n ? 0 : n;
+  document.querySelectorAll('#star-picker .star').forEach((s,i) => s.classList.toggle('on', i < starVal));
+}
+
+function addApp() {
+  const co = document.getElementById('f-company').value.trim();
+  if (!co) { document.getElementById('f-company').focus(); return; }
+  apps.unshift({
+    id: Date.now(),
+    company: co,
+    role: document.getElementById('f-role').value.trim() || 'SDR',
+    date: document.getElementById('f-date').value || today(),
+    source: document.getElementById('f-source').value,
+    status: document.getElementById('f-status').value,
+    contact: document.getElementById('f-contact').value.trim(),
+    followup: document.getElementById('f-followup').value,
+    stars: starVal,
+    notes: document.getElementById('f-notes').value.trim(),
+    prep: document.getElementById('f-prep').value.trim(),
+  });
+  save();
+  ['f-company','f-role','f-contact','f-followup','f-notes','f-prep'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-status').value = 'Applied';
+  document.getElementById('f-date').value = today();
+  starVal = 0; setStar(0);
+  document.getElementById('add-form').classList.remove('open');
+  render();
+}
+
+function isFollowupDue(a) {
+  if (!a.followup) return false;
+  return new Date(a.followup) <= new Date();
+}
+
+function isOverdue(a) {
+  if (['Offer','Rejected','Ghosted'].includes(a.status)) return false;
+  return daysSince(a.date) >= settings.followDays && !['Screening','Interview','Offer'].includes(a.status);
+}
+
+function render() {
+  const total = apps.length;
+  const responded = apps.filter(a => ['Screening','Interview','Offer','Rejected'].includes(a.status)).length;
+  const active = apps.filter(a => ['Screening','Interview'].includes(a.status)).length;
+  const offers = apps.filter(a => a.status === 'Offer').length;
+  const followups = apps.filter(a => isFollowupDue(a) || isOverdue(a)).length;
+  const rate = total > 0 ? Math.round(responded / total * 100) : null;
+
+  document.getElementById('h-sub').textContent = `${total} application${total!==1?'s':''}`;
+  document.getElementById('h-rate').textContent = rate !== null ? rate + '%' : '—';
+  document.getElementById('m-total').textContent = total;
+  document.getElementById('m-active').textContent = active;
+  document.getElementById('m-offers').textContent = offers;
+  document.getElementById('m-followup').textContent = followups;
+
+  // Weekly goal
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const thisWeek = apps.filter(a => a.date && new Date(a.date) >= weekStart).length;
+  const pct = Math.min(100, Math.round(thisWeek / settings.goal * 100));
+  document.getElementById('goal-label').textContent = `This week: ${thisWeek} / ${settings.goal} applications`;
+  document.getElementById('goal-fill').style.width = pct + '%';
+
+  renderFunnel('funnel','funnel-names');
+  renderHomeList();
+  renderAppList();
+}
+
+function renderFunnel(bid, nid) {
+  const counts = {};
+  STATUSES.forEach(s => counts[s] = apps.filter(a => a.status === s).length);
+  const max = Math.max(...Object.values(counts), 1);
+  const fb = document.getElementById(bid), fn = document.getElementById(nid);
+  if (!fb || !fn) return;
+  fb.innerHTML = fn.innerHTML = '';
+  STATUSES.forEach(s => {
+    const n = counts[s];
+    const h = Math.max(3, Math.round(n / max * 56));
+    fb.innerHTML += `<div class="funnel-col"><div class="funnel-count" style="color:${COLORS[s]}">${n}</div><div class="funnel-bar" style="height:${h}px;background:${COLORS[s]};opacity:${n===0?0.2:1}"></div></div>`;
+    fn.innerHTML += `<div style="flex:1;text-align:center;"><div class="funnel-name">${s}</div></div>`;
+  });
+}
+
+function cardHtml(a) {
+  const ds = daysSince(a.date);
+  const cold = isOverdue(a);
+  const fdue = isFollowupDue(a);
+  return `<div class="app-card${cold?' overdue':''}" onclick="openDrawer(${a.id})">
+    <div class="app-top">
+      <div>
+        <div class="app-company">${a.company}${a.stars ? ' <span class="app-stars" style="color:#EF9F27;font-size:12px">'+'★'.repeat(a.stars)+'</span>' : ''}</div>
+        <div class="app-role">${a.role}</div>
+      </div>
+      <button class="btn-del" onclick="event.stopPropagation();deleteApp(${a.id})" aria-label="Remove"><i class="ti ti-x" aria-hidden="true"></i></button>
+    </div>
+    <div class="app-meta">
+      <span class="badge ${BADGE[a.status]}" onclick="event.stopPropagation();cycleStatus(${a.id})">${a.status}</span>
+      <span class="app-date">${fmtDate(a.date)}</span>
+      <span class="days-ago ${cold?'days-cold':'days-ok'}">${ds}d</span>
+      ${fdue ? `<span class="followup-flag followup-due"><i class="ti ti-bell" style="font-size:11px"></i> Follow up</span>` : ''}
+    </div>
+    ${a.notes ? `<div style="font-size:12px;color:var(--text3);margin-top:6px;font-style:italic;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${a.notes}</div>` : ''}
+  </div>`;
+}
+
+function renderHomeList() {
+  const list = document.getElementById('home-list');
+  const empty = document.getElementById('home-empty');
+  if (apps.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  list.innerHTML = apps.slice(0,5).map(cardHtml).join('');
+}
+
+function renderAppList() {
+  const counts = {};
+  STATUSES.forEach(s => counts[s] = apps.filter(a => a.status === s).length);
+  const allStatuses = ['All', ...STATUSES.filter(s => apps.some(a => a.status === s))];
+  const fEl = document.getElementById('filters');
+  fEl.innerHTML = allStatuses.map(s =>
+    `<button class="filter-btn${activeFilter===s?' active':''}" onclick="setFilter('${s}')">${s}${s!=='All'?' ('+counts[s]+')':''}</button>`
+  ).join('');
+  const shown = activeFilter === 'All' ? apps : apps.filter(a => a.status === activeFilter);
+  const list = document.getElementById('app-list');
+  const empty = document.getElementById('app-empty');
+  if (apps.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  list.innerHTML = shown.map(cardHtml).join('');
+}
+
+function setFilter(s) { activeFilter = s; renderAppList(); }
+
+function cycleStatus(id) {
+  const a = apps.find(x => x.id === id);
+  if (!a) return;
+  a.status = STATUSES[(STATUSES.indexOf(a.status) + 1) % STATUSES.length];
+  save(); render();
+}
+
+function deleteApp(id) {
+  if (!confirm('Remove this application?')) return;
+  apps = apps.filter(a => a.id !== id);
+  save(); render();
+}
+
+// Drawer
+function openDrawer(id) {
+  const a = apps.find(x => x.id === id);
+  if (!a) return;
+  drawerApp = a;
+  document.getElementById('d-co').textContent = a.company;
+  document.getElementById('d-role').textContent = a.role;
+  document.getElementById('d-stars').textContent = starsHtml(a.stars);
+  document.getElementById('d-status').innerHTML = `<span class="badge ${BADGE[a.status]}">${a.status}</span>`;
+  document.getElementById('d-date').textContent = fmtDate(a.date);
+  document.getElementById('d-days').textContent = daysSince(a.date) + ' days ago';
+  document.getElementById('d-source').textContent = a.source;
+  const cr = document.getElementById('d-contact-row'), cf = document.getElementById('d-contact');
+  if (a.contact) { cr.style.display='flex'; cf.textContent = a.contact; } else { cr.style.display='none'; }
+  const fr = document.getElementById('d-followup-row'), ff = document.getElementById('d-followup');
+  if (a.followup) { fr.style.display='flex'; ff.textContent = fmtDate(a.followup); } else { fr.style.display='none'; }
+  const nw = document.getElementById('d-notes-wrap');
+  if (a.notes) { nw.style.display='block'; document.getElementById('d-notes').textContent = a.notes; } else { nw.style.display='none'; }
+  const pw = document.getElementById('d-prep-wrap');
+  if (a.prep) { pw.style.display='block'; document.getElementById('d-prep').textContent = a.prep; } else { pw.style.display='none'; }
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+  drawerApp = null;
+}
+
+function cycleStatusDrawer() {
+  if (!drawerApp) return;
+  cycleStatus(drawerApp.id);
+  openDrawer(drawerApp.id);
+}
+
+function deleteDrawer() {
+  if (!drawerApp) return;
+  if (!confirm('Remove this application?')) return;
+  const id = drawerApp.id;
+  closeDrawer();
+  apps = apps.filter(a => a.id !== id);
+  save(); render();
+}
+
+// Stats
+function renderStats() {
+  renderFunnel('funnel2','funnel-names2');
+
+  // Source effectiveness
+  const sources = [...new Set(apps.map(a => a.source))];
+  const sc = document.getElementById('source-chart');
+  if (sources.length === 0) { sc.innerHTML = '<p style="color:var(--text3);font-size:13px;">No data yet.</p>'; }
+  else {
+    const rows = sources.map(src => {
+      const subset = apps.filter(a => a.source === src);
+      const resp = subset.filter(a => ['Screening','Interview','Offer','Rejected'].includes(a.status)).length;
+      const rate = subset.length > 0 ? Math.round(resp / subset.length * 100) : 0;
+      return { src, count: subset.length, rate };
+    }).sort((a,b) => b.rate - a.rate);
+    sc.innerHTML = rows.map(r => `
+      <div class="source-row">
+        <span class="source-name">${r.src}</span>
+        <div class="source-bar-wrap"><div class="source-bar-fill" style="width:${r.rate}%"></div></div>
+        <span class="source-rate">${r.rate}%</span>
+      </div>`).join('');
+  }
+
+  // Weekly bar chart
+  const weeks = {};
+  apps.forEach(a => {
+    if (!a.date) return;
+    const d = new Date(a.date);
+    const monday = new Date(d); monday.setDate(d.getDate() - ((d.getDay()+6)%7));
+    const key = monday.toISOString().slice(0,10);
+    weeks[key] = (weeks[key] || 0) + 1;
+  });
+  const wkeys = Object.keys(weeks).sort().slice(-8);
+  const wvals = wkeys.map(k => weeks[k]);
+  const wlabels = wkeys.map(k => { const d = new Date(k); return `${d.getDate()}/${d.getMonth()+1}`; });
+  if (weeklyChart) { weeklyChart.destroy(); weeklyChart = null; }
+  const canvas = document.getElementById('weekly-chart');
+  if (wkeys.length === 0) { canvas.style.display='none'; return; }
+  canvas.style.display = 'block';
+  canvas.style.height = '140px';
+  weeklyChart = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: wlabels, datasets: [{ label: 'Apps', data: wvals, backgroundColor: '#378ADD', borderRadius: 4 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1, color: '#9e9e9a', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.06)' } }, x: { ticks: { color: '#9e9e9a', font: { size: 11 } }, grid: { display: false } } }
+    }
+  });
+}
+
+// Export CSV
+function exportCSV() {
+  const headers = ['Company','Role','Date Applied','Source','Status','Contact','Follow-up Date','Stars','Notes','Prep','Days Since Applied'];
+  const rows = apps.map(a => [
+    a.company, a.role, a.date, a.source, a.status, a.contact||'', a.followup||'', a.stars||0,
+    (a.notes||'').replace(/"/g,'""'), (a.prep||'').replace(/"/g,'""'), daysSince(a.date)
+  ].map(v => `"${v}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'sdr-applications.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function clearAll() {
+  if (!confirm('Delete all application data? This cannot be undone.')) return;
+  apps = []; save(); render();
+}
+
+load();
+</script>
+</body>
+</html>
